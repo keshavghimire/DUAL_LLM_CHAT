@@ -1,5 +1,6 @@
 import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
 
 interface MessageBubbleProps {
   message: string;
@@ -38,7 +39,24 @@ export const MessageBubble = ({ message, timestamp, side, panelSide }: MessageBu
               : "bg-llm2/5 border border-llm2/10",
           isRightAligned && "max-w-[80%]"
         )}>
-          <p className="text-xs text-foreground leading-relaxed">{message}</p>
+          <div className="text-xs text-foreground leading-relaxed prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-strong:text-foreground prose-strong:font-semibold prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>,
+                ul: ({ children }) => <ul className="list-disc list-inside my-1 space-y-0">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside my-1 space-y-0">{children}</ol>,
+                li: ({ children }) => <li className="my-0">{children}</li>,
+                code: ({ children }) => <code className="bg-muted px-1 py-0.5 rounded text-[0.7rem] font-mono">{children}</code>,
+                h1: ({ children }) => <h1 className="text-sm font-bold mt-2 mb-1">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-xs font-bold mt-2 mb-1">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-xs font-semibold mt-1 mb-0.5">{children}</h3>,
+              }}
+            >
+              {message}
+            </ReactMarkdown>
+          </div>
         </div>
         <span className={cn(
           "text-[10px] text-muted-foreground mt-1 block",
