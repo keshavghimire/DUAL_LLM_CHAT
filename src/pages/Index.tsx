@@ -75,6 +75,10 @@ const Index = () => {
   const [isLlm2Generating, setIsLlm2Generating] = useState(false);
   const [streamingMessageIds, setStreamingMessageIds] = useState<Set<string>>(new Set());
   const hasAutoStarted = useRef(false);
+  const llm1ContentQueue = useRef<string[]>([]);
+  const llm1ProcessingQueue = useRef(false);
+  const llm2ContentQueue = useRef<string[]>([]);
+  const llm2ProcessingQueue = useRef(false);
 
   // Combine all messages for unified chat view
   const allMessages = useMemo(() => {
@@ -203,16 +207,17 @@ const Index = () => {
 
       // Call the streaming API
       let accumulatedContent = '';
-      await generateLLMResponseStream(
-        {
-          model: llm1Config.model,
-          temperature: llm1Config.temperature,
-          maxTokens: llm1Config.maxTokens,
-          systemPrompt: llm1Config.systemPrompt,
-          conversationHistory,
-        },
-        async (chunk: string) => {
-          // Update message character-by-character for slower, smoother streaming
+      llm1ContentQueue.current = [];
+      llm1ProcessingQueue.current = false;
+      
+      // Process queue function
+      const processLlm1Queue = async () => {
+        if (llm1ProcessingQueue.current) return;
+        llm1ProcessingQueue.current = true;
+        
+        while (llm1ContentQueue.current.length > 0) {
+          const chunk = llm1ContentQueue.current.shift() || '';
+          // Process character-by-character for smooth streaming effect
           for (let i = 0; i < chunk.length; i++) {
             accumulatedContent += chunk[i];
             setLlm1Messages(prev => 
@@ -222,11 +227,33 @@ const Index = () => {
                   : msg
               )
             );
-            // Small delay for character-by-character effect (slower)
-            await new Promise(resolve => setTimeout(resolve, 15));
+            // Small delay for character-by-character effect (slower for better visibility)
+            await new Promise(resolve => setTimeout(resolve, 40));
           }
+        }
+        
+        llm1ProcessingQueue.current = false;
+      };
+      
+      await generateLLMResponseStream(
+        {
+          model: llm1Config.model,
+          temperature: llm1Config.temperature,
+          maxTokens: llm1Config.maxTokens,
+          systemPrompt: llm1Config.systemPrompt,
+          conversationHistory,
         },
-        () => {
+        (chunk: string) => {
+          // Add chunk to queue
+          llm1ContentQueue.current.push(chunk);
+          // Process queue if not already processing
+          processLlm1Queue();
+        },
+        async () => {
+          // Wait for queue to finish processing
+          while (llm1ProcessingQueue.current || llm1ContentQueue.current.length > 0) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
           // Streaming complete
           setIsLlm2Typing(false);
           setIsLlm1Thinking(false);
@@ -328,16 +355,17 @@ const Index = () => {
 
       // Call the streaming API
       let accumulatedContent = '';
-      await generateLLMResponseStream(
-        {
-          model: llm2Config.model,
-          temperature: llm2Config.temperature,
-          maxTokens: llm2Config.maxTokens,
-          systemPrompt: llm2Config.systemPrompt,
-          conversationHistory,
-        },
-        async (chunk: string) => {
-          // Update message character-by-character for slower, smoother streaming
+      llm2ContentQueue.current = [];
+      llm2ProcessingQueue.current = false;
+      
+      // Process queue function
+      const processLlm2Queue = async () => {
+        if (llm2ProcessingQueue.current) return;
+        llm2ProcessingQueue.current = true;
+        
+        while (llm2ContentQueue.current.length > 0) {
+          const chunk = llm2ContentQueue.current.shift() || '';
+          // Process character-by-character for smooth streaming effect
           for (let i = 0; i < chunk.length; i++) {
             accumulatedContent += chunk[i];
             setLlm2Messages(prev => 
@@ -347,11 +375,33 @@ const Index = () => {
                   : msg
               )
             );
-            // Small delay for character-by-character effect (slower)
-            await new Promise(resolve => setTimeout(resolve, 15));
+            // Small delay for character-by-character effect (slower for better visibility)
+            await new Promise(resolve => setTimeout(resolve, 40));
           }
+        }
+        
+        llm2ProcessingQueue.current = false;
+      };
+      
+      await generateLLMResponseStream(
+        {
+          model: llm2Config.model,
+          temperature: llm2Config.temperature,
+          maxTokens: llm2Config.maxTokens,
+          systemPrompt: llm2Config.systemPrompt,
+          conversationHistory,
         },
-        () => {
+        (chunk: string) => {
+          // Add chunk to queue
+          llm2ContentQueue.current.push(chunk);
+          // Process queue if not already processing
+          processLlm2Queue();
+        },
+        async () => {
+          // Wait for queue to finish processing
+          while (llm2ProcessingQueue.current || llm2ContentQueue.current.length > 0) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
           // Streaming complete
           setIsLlm1Typing(false);
           setIsLlm2Thinking(false);
