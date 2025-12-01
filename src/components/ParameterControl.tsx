@@ -22,20 +22,24 @@ export const ParameterControl = ({
   type = "slider"
 }: ParameterControlProps) => {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-        <span className="text-xs text-foreground font-medium">{value}</span>
-      </div>
+    <div>
+      {label && (
+        <div className="flex items-center justify-between mb-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+          <span className="text-xs text-foreground font-medium">{value}</span>
+        </div>
+      )}
       {type === "slider" ? (
-        <Slider
-          value={[value]}
-          onValueChange={([v]) => onChange(v)}
-          min={min}
-          max={max}
-          step={step}
-          className="w-full"
-        />
+        <div className="flex items-center h-9">
+          <Slider
+            value={[value]}
+            onValueChange={([v]) => onChange(v)}
+            min={min}
+            max={max}
+            step={step}
+            className="w-full"
+          />
+        </div>
       ) : (
         <Input
           type="number"
